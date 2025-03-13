@@ -1,0 +1,85 @@
+---
+title: "WebR testavimas"
+format: 
+  html:
+    embed-resources: false
+editor: visual
+engine: knitr
+filters:
+  - coatless/webr
+  - quarto-ext/shinylive
+webr:
+  packages: ['ggplot2', 'dplyr', 'plotly']
+  show-startup-message: true
+  mem-init: 512
+  mem-max: 1024
+  service-worker-url: 'https://webr.r-wasm.org/v0.2.2/'
+---
+
+```{webr-r}
+# sita chunka galima redaguoti paciame HTML
+fit = lm(mpg ~ am, data = mtcars)
+
+summary(fit)
+```
+
+
+```{webr-r}
+data <- data.frame(x = rnorm(100), y = rnorm(100))
+p <- ggplot2::ggplot(data, mapping = aes(x=x, y=y)) + 
+  geom_point()
+
+p
+ggplotly(p)
+```
+
+
+```{webr-r}
+# plotly vis vien neveikia :/
+
+plot_ly(midwest, x = ~percollege, y = ~percbelowpoverty,
+            text = ~county, type = "scatter", mode = "markers",
+            color = ~state,
+            size = ~popdensity
+            )
+```
+
+
+```{shinylive-r}
+#| standalone: true
+#| viewerHeight: 420
+
+library(shiny)
+
+ui <- fluidPage(
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("period", "Period", 
+                 min = 0.5, max = 2, value = 1, step = 0.5),
+      sliderInput("amplitude", "Amplitude", 
+                 min = 0, max = 2, value = 1, step = 0.25),
+      sliderInput("shift", "Phase shift", 
+                 min = 0, max = 2, value = 0, step = 0.1)
+    ),
+    mainPanel(
+      plotOutput("plot")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  output$plot <- renderPlot({
+    t <- seq(0, 4, by = 0.01)
+    s <- input$amplitude * sin((2 * pi / input$period) * (t - input$shift / 2))
+    
+    plot(t, s, type = "l", ylim = c(-2, 2),
+         xlab = "Time", ylab = "Sine wave",
+         main = "Sine Function Visualization")
+    grid()
+  })
+}
+
+shinyApp(ui, server)
+```
+
+
